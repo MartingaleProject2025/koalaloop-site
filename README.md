@@ -67,6 +67,27 @@ cache to invalidate and no certificate to renew.
 DNS lives in AWS Route 53 (the domain is registered there); it points at GitHub's Pages
 servers. Repo Settings → Pages holds the custom domain and the "Enforce HTTPS" setting.
 
+### If you ever point a new domain here
+
+GitHub often does **not** issue the TLS certificate on its own once the DNS records land. It
+sits on its default `*.github.io` certificate indefinitely, so `http://` works while
+`https://` fails with `SSL: no alternative certificate subject name matches target hostname`.
+
+Fix: clear the custom domain in Settings → Pages, save, re-enter it, save. The certificate
+appears within a minute, and "Enforce HTTPS" becomes tickable. This cost real time on the
+koalaloop.games launch.
+
+Verify on the scheme consumers actually use, not whichever one answers first:
+
+```
+curl -I -L https://koalaloop.games/onlydraws/privacy      # must be 200, not an SSL error
+openssl s_client -connect koalaloop.games:443 -servername koalaloop.games | head -3
+```
+
+A certificate whose CN is `*.github.io` means none was ever issued for the domain. Before
+blaming GitHub, confirm the A/AAAA records resolve and that no CAA record blocks Let's
+Encrypt (`dig +short CAA koalaloop.games`, empty is fine).
+
 ## Open items before the OnlyDraws App Store submission
 
 1. **Support inbox.** Pages advertise `support@koalaloop.games`. That address needs mail
@@ -80,3 +101,30 @@ servers. Repo Settings → Pages holds the custom domain and the "Enforce HTTPS"
 3. **Effective date.** OnlyDraws legal pages read "July 20, 2026". Bump on material changes.
 4. **Legal entity.** Pages use the trade name "KoalaLoop Games". If you incorporate, add the
    full entity name to the privacy and terms pages.
+
+## Backlog (not blocking anything)
+
+- **Em dashes in the OnlyCars copy.** House style is no em dashes anywhere, including
+  marketing copy, but `onlycars/index.html` carries about ten of them in its title, og:title,
+  and body prose. They were kept deliberately so this mirror stays byte-faithful to the live
+  original at onlycars-app.com rather than having its published wording quietly reworded.
+  Decide whether to strip them here (the two copies then diverge) or in both places at once.
+  Check with `grep -n '—' onlycars/index.html`.
+
+- **`onlycars-legal` is a dead repo.** It holds a byte-identical duplicate of the same three
+  legal pages, served on a `github.io` URL. Nothing links to it: the live OnlyCars site
+  serves its own copies from `onlycars-app`, and this repo now serves a third. Worth deleting
+  or archiving, but confirm first that no old App Store Connect metadata still points at the
+  `github.io` URL, since shipped app versions cannot be changed.
+
+- **Whether to consolidate OnlyCars.** Right now onlycars-app.com is the real site and
+  `/onlycars/` here is a mirror, which means two places to edit and a canonical tag holding
+  the two apart. Consolidating would give one home for everything. It is deliberately not
+  done: the shipped OnlyCars binary and its App Store Connect metadata point at
+  onlycars-app.com, and copies already installed on phones link there permanently. If you do
+  consolidate, do it during a normal app update and keep the old domain serving redirects
+  rather than retiring it.
+
+- **New games launch here from day one.** The decision from the koalaloop.games launch: every
+  game after OnlyDraws gets a `/<product>/` folder in this repo instead of its own repo and
+  domain. OnlyCars is the one exception, for the reason above.
